@@ -43,11 +43,39 @@ def get_words():
 def get_random_color():
   return "#%06x" % random.randint(0, 0xFFFFFF)
 
+def get_temp(province, city):
+    # 城市id
+    city_id = cityinfo.cityInfo[province][city]["AREAID"]
+    # city_id = 101280101
+    # 毫秒级时间戳
+    t = (int(round(time() * 1000)))
+    headers = {
+      "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
+    }
+    url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
+    response = get(url, headers=headers)
+    response.encoding = "utf-8"
+    response_data = response.text.split(";")[0].split("=")[-1]
+    response_json = eval(response_data)
+    # print(response_json)
+    weatherinfo = response_json["weatherinfo"]
+    # 天气
+    weather = weatherinfo["weather"]
+    # 最高气温
+    temp = weatherinfo["temp"]
+    # 最低气温
+    tempn = weatherinfo["tempn"]
+    return weather, temp, tempn
+
 
 client = WeChatClient(app_id, app_secret)
 
 wm = WeChatMessage(client)
 wea, temperature = get_weather()
-data = {"weather":{"value":wea},"temperature":{"value":temperature},"love_days":{"value":get_count()},"birthday_left":{"value":get_birthday()},"words":{"value":get_words(), "color":get_random_color()}}
+weather, temp, tempn = get_temp()
+
+data = {"weather":{"value":weather},"temperature":{"value":temperature},"max_temperature":{"value":temp}, "min_temperature":{"value":tempn}, "love_days":{"value":get_count()},"birthday_left":{"value":get_birthday()},"words":{"value":get_words(), "color":get_random_color()}}
 res = wm.send_template(user_id, template_id, data)
 print(res)
